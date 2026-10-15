@@ -1,0 +1,8 @@
+{
+  Master About
+  Copyright (c) 2026 Peter Walker pwalkz@gmail.com
+
+  This source code is licensed under the MIT License.
+  See the LICENSE file in the root directory of this source tree
+  for the full license terms.
+}

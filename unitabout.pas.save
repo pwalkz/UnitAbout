@@ -1,0 +1,206 @@
+{ Home Explorer Copyright (c) 2026 Peter Walker pwalkz@gmail.com
+
+  This source code is licensed under the MIT License.
+  See the LICENSE file in the root directory of this source tree
+  for the full license terms.
+}
+
+unit UnitAbout;
+
+// When using this unit
+// 1. Populate the Version Info in Project Options, ProgramName and ProgramVersion.
+// 2. Update the AUTHOR const, below.
+
+{$mode ObjFPC}{$H+}
+
+interface
+
+uses
+  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls,
+  Buttons, ExtCtrls, LCLPlatformDef, InterfaceBase, FileInfo, LCLVersion;
+
+type
+
+  { TAboutForm }
+
+  TAboutForm = class(TForm)
+    btnClose: TBitBtn;
+    Image1: TImage;
+    Memo1: TMemo;
+    Panel1: TPanel;
+    Panel2: TPanel;
+    procedure btnCloseClick(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
+  private
+
+  public
+
+
+  end;
+
+var
+  AboutForm: TAboutForm;
+
+function GetUniversalFont(): string;
+function GetAboutStr(): string;
+procedure ReadVersionStr(key: string; var val: string);
+function ReadVersionInfo(): string;
+
+const
+  AUTHOR = 'Peter Walker, Superuser';
+
+
+implementation
+
+{$R *.lfm}
+
+{ TAboutForm }
+
+function GetUniversalFont(): string;
+const
+  // Priority list of fonts
+  FontList: array[0..4] of string =
+    ('Consolas', 'Menlo', 'Jetbrains Mono', 'DejaVu Sans Mono', 'Monospace');
+var
+  i: integer;
+begin
+  Result := 'default';
+  for i := Low(FontList) to High(FontList) do
+  begin
+    // Screen.Fonts contains all fonts available to the OS
+    if Screen.Fonts.IndexOf(FontList[i]) <> -1 then
+    begin
+      Result := FontList[i];
+      Break; // Stop at the first one we find
+    end;
+  end;
+end;
+
+function GetModVer(): string;
+var
+  LT: TDateTime;
+  iMod: longint;
+  sModified, sWidget: string;
+begin
+  iMod := FileAge(Application.ExeName);
+  LT := FileDateToDateTime(iMod);
+  sModified := FormatDateTime('YYYY-MM-DD', LT);
+  // uses LCLPlatformDef, InterfaceBase
+  sWidget := LCLPlatformDisplayNames[WidgetSet.LCLPlatform];
+  Result := ExtractFileName(Application.ExeName) + ' [' + sModified + '] ' + sWidget;
+end;
+
+function GetProgramVersion: string;
+var
+  pv: TProgramVersion;
+begin
+  Result := '0.0';
+  FileInfo.GetProgramVersion(pv);  // uses FileInfo
+  Result := IntToStr(pv.Major) + '.' + IntToStr(pv.Minor) + '.' +
+    IntToStr(pv.Revision) + '.' + IntToStr(pv.Build);
+end;
+
+function GetProgramName: string;
+var
+  vi: TFileVersionInfo;
+begin
+  Result := 'Product Name!!';
+  vi := TFileVersionInfo.Create(nil);   // uses FileInfo
+  try
+    vi.ReadFileInfo;
+    Result := vi.VersionStrings.Values['ProductName'];
+  finally
+    vi.Free;
+  end;
+end;
+
+procedure ReadVersionStr(key: string; var val: string);
+var
+  vi: TFileVersionInfo;  // uses FileInfo
+begin
+  vi := TFileVersionInfo.Create(nil);
+  try
+    vi.ReadFileInfo;
+    // Get Value for given Key
+    val := vi.VersionStrings.Values[key];
+  finally
+    vi.Free;
+  end;
+end;
+
+function ReadVersionInfo(): string;
+var
+  vi: TFileVersionInfo;   // uses FileInfo
+  i: integer;
+  s: string;
+begin
+  Result := '';
+  vi := TFileVersionInfo.Create(nil);
+  try
+    vi.ReadFileInfo;
+    // print all field Keys and Values
+    for i := 0 to vi.VersionStrings.Count - 1 do
+    begin
+      s := 'F' + IntToStr(i) + ': ' + vi.VersionStrings[i];
+      Result := Result + sLineBreak + s;
+    end;
+  finally
+    vi.Free;
+  end;
+end;
+
+// uses SysUtils, LCLVersion, LCLPlatformDef , InterfaceBase
+function GetAboutStr(): string;
+var
+  sAppTitle, sExeName, sModified, sWidget, sVersion, sAuthor, sCompiler,
+  sTarget, sAbout, sCap1, sComment: string;
+begin
+  ReadVersionStr('Comments', sComment);
+
+  sCap1 := 'Program Name     : ' + GetProgramName + ' ' + GetProgramVersion;
+
+  sAppTitle := 'Application Title: ' + ApplicationName;
+
+  sExeName := 'Executable       : ' + Application.ExeName;
+
+  sModified := FormatDateTime('YYYY.MM.DD', FileDateToDateTime(
+    FileAge(Application.ExeName)));  // Exe, last modified date
+
+  sVersion := 'Compiled Date    : ' + sModified; //+ sWidget;
+
+  sCompiler := 'Compiled with    : Lazarus ' + lcl_version + ' FPC ' + {$I %FPCVERSION%};
+
+  sTarget := 'Target OS        : ' + {$I %FPCTARGETOS%} + ' ' + {$I %FPCTARGETCPU%};
+
+  sWidget := 'Widget Set       : ' + LCLPlatformDisplayNames[WidgetSet.LCLPlatform];
+
+  sAuthor := 'Developed by     : ' + AUTHOR;
+
+  sAbout := sLineBreak + sComment + sLineBreak + sLineBreak + sCap1 +
+    sLineBreak + sAppTitle + sLineBreak + sExeName + sLineBreak +
+    sVersion + sLineBreak + sCompiler + sLineBreak + sTarget + sLineBreak +
+    sWidget + sLineBreak + sLineBreak + sAuthor;
+  Result := sAbout;
+end;
+
+
+procedure TAboutForm.FormCreate(Sender: TObject);
+begin
+  Caption := GetProgramName + ' ' + GetProgramVersion;
+  Memo1.Font.Name := GetUniversalFont();
+  Memo1.Font.Quality := fqDefault;
+  Memo1.Font.Color := clDefault;
+  Memo1.Color := clDefault;
+  Memo1.ReadOnly := True;
+  Memo1.ScrollBars := ssNone;
+
+  Memo1.Text := GetAboutStr();
+
+end;
+
+procedure TAboutForm.btnCloseClick(Sender: TObject);
+begin
+  Close;
+end;
+
+end.
